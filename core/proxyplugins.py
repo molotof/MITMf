@@ -82,7 +82,10 @@ class ProxyPlugins:
         self.plugin_list.remove(p)
         log.debug("Removing {} plugin".format(p.name))
         for mthd,pmthd in self.mthdDict.iteritems():
-            self.plugin_mthds[mthd].remove(p)
+            try:
+                self.plugin_mthds[mthd].remove(getattr(p,pmthd))
+            except KeyError:
+                pass #nothing to remove
 
     def hook(self):
         '''Magic to hook various function calls in sslstrip'''
@@ -108,9 +111,10 @@ class ProxyPlugins:
         log.debug("hooking {}()".format(fname))
         #calls any plugin that has this hook
         try:
-            for f in self.plugin_mthds[fname]:
-                a = f(**args)
-                if a != None: args = a
+            if self.plugin_mthds:
+                for f in self.plugin_mthds[fname]:
+                    a = f(**args)
+                    if a != None: args = a
         except Exception as e:
             #This is needed because errors in hooked functions won't raise an Exception + Traceback (which can be infuriating)
             log.error("Exception occurred in hooked function")
